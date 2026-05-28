@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# 输出与实验
+outputs/
+checkpoint/
+*.pth
+*.pt
+logs/
+*.log
+metrics.csv
+*.png
+run_config.json
+summary.txt
+
+# 数据集
+CIFAR10/
+CIFAR100/
+data/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/

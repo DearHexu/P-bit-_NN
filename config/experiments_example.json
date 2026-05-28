@@ -1,0 +1,3 @@
+{"exp_name": "ProbGoogLeNet_CIFAR10", "model_name": "ProbGoogLeNet", "gpu_id": 0}
+{"exp_name": "ProbResNet18_CIFAR10", "model_name": "ProbResNet18", "gpu_id": 1}
+{"exp_name": "ProbResNet34_CIFAR10", "model_name": "ProbResNet34", "gpu_id": 0, "epochs": 80, "lr": 0.0005}
