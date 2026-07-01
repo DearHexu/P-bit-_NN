@@ -86,12 +86,12 @@ def main():
 
     activations = [
         (sigmoid(x), 'Sigmoid', '#E94F37'),
-        (tanhsig(x), 'Tanhsig', '#2E86AB'),
-        (silu(x), 'SiLU (Swish)', '#44AF69'),
+        (relu(x), 'ReLU', '#2E86AB'),
         (tanh(x), 'Tanh', '#F18F01'),
-        (mish(x), 'Mish', '#C73E1D'),
+        (silu(x), 'SiLU (Swish)', '#44AF69'),
         (gelu(x), 'GELU', '#6C5CE7'),
-        (softplus(x), 'Softplus', '#00B894'),
+        # (mish(x), 'Mish', '#C73E1D'),
+        (tanhsig(x), 'Tanhsig', '#00B894'),
     ]
 
     n = len(activations)
