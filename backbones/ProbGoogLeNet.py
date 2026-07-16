@@ -1,4 +1,4 @@
-'''GoogLeNet with PyTorch. 含原版 GoogLeNet（ReLU）与概率网络化版本 ProbGoogLeNet（BinarySTE + 可配置激活）。'''
+'''GoogLeNet with PyTorch. Includes original GoogLeNet (ReLU) and probabilistic version ProbGoogLeNet (BinarySTE + configurable activation).'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,9 +6,9 @@ import torch.nn.functional as F
 from backbones.BinarySTE import BinarySTE
 
 
-# ---------- 原版 Inception（ReLU，无 BinarySTE），供 GoogLeNet 使用 ----------
+# ---------- Original Inception (ReLU, no BinarySTE), for GoogLeNet ----------
 class InceptionBase(nn.Module):
-    """原版 Inception：Conv+BN+ReLU，无 BinarySTE。"""
+    """Original Inception: Conv+BN+ReLU, no BinarySTE."""
     def __init__(self, in_planes, n1x1, n3x3red, n3x3, n5x5red, n5x5, pool_planes):
         super(InceptionBase, self).__init__()
         self.b1 = nn.Sequential(
@@ -51,7 +51,7 @@ class InceptionBase(nn.Module):
 
 
 class GoogLeNet(nn.Module):
-    """原版 GoogLeNet（ReLU），用于 CIFAR10/CIFAR100 非概率化基线。"""
+    """Original GoogLeNet (ReLU), for CIFAR10/CIFAR100 non-probabilistic baselines."""
     def __init__(self, num_classes=10):
         super(GoogLeNet, self).__init__()
         self.pre_layers = nn.Sequential(
@@ -66,7 +66,7 @@ class GoogLeNet(nn.Module):
         self.b4 = InceptionBase(512, 160, 112, 224, 24, 64, 64)
         self.c4 = InceptionBase(512, 128, 128, 256, 24, 64, 64)
         self.d4 = InceptionBase(512, 112, 144, 288, 32, 64, 64)
-        self.e4 = InceptionBase(528, 256, 160, 320, 32, 128, 128)  # 528 = d4 输出通道
+        self.e4 = InceptionBase(528, 256, 160, 320, 32, 128, 128)  # 528 = d4 output channels
         self.a5 = InceptionBase(832, 256, 160, 320, 32, 128, 128)
         self.b5 = InceptionBase(832, 384, 192, 384, 48, 128, 128)
         self.avgpool = nn.AvgPool2d(8, stride=1)

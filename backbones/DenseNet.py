@@ -1,4 +1,4 @@
-'''DenseNet in PyTorch. 含原版与概率网络化版本 ProbDenseNet（BinarySTE + 可配置激活）。'''
+'''DenseNet in PyTorch. Includes original and probabilistic version ProbDenseNet (BinarySTE + configurable activation).'''
 import math
 import torch
 import torch.nn as nn
@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from backbones.BinarySTE import BinarySTE
 
 
-# Dense Block 内 Bottleneck：1x1 降维 + 3x3 卷积，通过 concat 复用特征
+# Dense Block Bottleneck: 1x1 reduction + 3x3 conv, feature reuse via concatenation
 class Bottleneck(nn.Module):
     def __init__(self, in_planes, growth_rate):
         super(Bottleneck, self).__init__()
@@ -22,7 +22,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-# 概率网络化 Dense Bottleneck：激活可配置 + BinarySTE
+# Probabilistic Dense Bottleneck: configurable activation + BinarySTE
 class ProbDenseBottleneck(nn.Module):
     def __init__(self, in_planes, growth_rate, activation="tanh_sigmoid"):
         super(ProbDenseBottleneck, self).__init__()
@@ -76,18 +76,18 @@ class DenseNet(nn.Module):
         self.growth_rate = growth_rate
         num_planes = 2*growth_rate
 
-        # 第一层卷积层
+        # First conv layer
         self.conv1 = nn.Conv2d(
             3, num_planes, kernel_size=3, padding=1, bias=False)
 
-        # 第一个DenseBlock，重复6次
+        # First DenseBlock, repeated 6 times
         self.dense1 = self._make_dense_layers(block, num_planes, nblocks[0])
         num_planes += nblocks[0]*growth_rate
         out_planes = int(math.floor(num_planes*reduction))
         self.trans1 = Transition(num_planes, out_planes)
         num_planes = out_planes
 
-        # 第二个DenseBlock，重复12次
+        # Second DenseBlock, repeated 12 times
         self.dense2 = self._make_dense_layers(block, num_planes, nblocks[1])
         num_planes += nblocks[1]*growth_rate
         out_planes = int(math.floor(num_planes*reduction))
@@ -141,7 +141,7 @@ def DenseNet161(num_classes=10):
     return DenseNet(Bottleneck, [6, 12, 36, 24], growth_rate=48, num_classes=num_classes)
 
 
-# ---------- 概率网络化 ProbDenseNet ----------
+# ---------- Probabilistic ProbDenseNet ----------
 class ProbDenseNet(nn.Module):
     def __init__(self, block, nblocks, growth_rate=12, reduction=0.5, num_classes=10, activation="tanh_sigmoid"):
         super(ProbDenseNet, self).__init__()
@@ -203,4 +203,3 @@ def ProbDenseNet201(num_classes=10, activation="tanh_sigmoid"):
 
 def ProbDenseNet161(num_classes=10, activation="tanh_sigmoid"):
     return ProbDenseNet(ProbDenseBottleneck, [6, 12, 36, 24], growth_rate=48, num_classes=num_classes, activation=activation)
-

@@ -1,5 +1,5 @@
 """
-pytorch实现ResNet18/34/50/101/152。含原版 ResNet（ReLU）与概率网络化版本 ProbResNet（BinarySTE + 可配置激活）。
+PyTorch implementation of ResNet18/34/50/101/152. Includes original ResNet (ReLU) and probabilistic version ProbResNet (BinarySTE + configurable activation).
 """
 import torch
 import torch.nn as nn
@@ -8,9 +8,9 @@ import torch.nn.functional as F
 from backbones.BinarySTE import BinarySTE
 
 
-# ---------- 原版 ResNet 基础模块（ReLU，无 BinarySTE），供 ResNet18/34/50/101/152 使用 ----------
+# ---------- Original ResNet building blocks (ReLU, no BinarySTE), for ResNet18/34/50/101/152 ----------
 class BasicBlockBase(nn.Module):
-    """原版 BasicBlock：Conv+BN+ReLU，无 BinarySTE。"""
+    """Original BasicBlock: Conv+BN+ReLU, no BinarySTE."""
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
@@ -35,7 +35,7 @@ class BasicBlockBase(nn.Module):
 
 
 class BottleneckBase(nn.Module):
-    """原版 Bottleneck：Conv+BN+ReLU，无 BinarySTE。"""
+    """Original Bottleneck: Conv+BN+ReLU, no BinarySTE."""
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
@@ -63,7 +63,7 @@ class BottleneckBase(nn.Module):
 
 
 class ResNet(nn.Module):
-    """原版 ResNet（ReLU），用于 CIFAR10/CIFAR100 非概率化基线。"""
+    """Original ResNet (ReLU), for CIFAR10/CIFAR100 non-probabilistic baselines."""
     def __init__(self, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
@@ -114,8 +114,8 @@ def ResNet152(num_classes=10):
     return ResNet(BottleneckBase, [3, 8, 36, 3], num_classes=num_classes)
 
 
-# ---------- 概率化 ResNet（BinarySTE + 可配置激活） ----------
-# 构建 ResNet18-34 的网络基础模块（激活函数可配置，便于对比实验）
+# ---------- Probabilistic ResNet (BinarySTE + configurable activation) ----------
+# Build ResNet18-34 basic blocks (activation configurable, for comparison experiments)
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -146,7 +146,7 @@ class BasicBlock(nn.Module):
         return out
 
 
-# 构建 ResNet50/101/152 的 Bottleneck 模块（激活可配置）
+# Build ResNet50/101/152 Bottleneck blocks (activation configurable)
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -182,7 +182,7 @@ class Bottleneck(nn.Module):
         return out
 
 
-# 搭建 ProbResNet 模板块（支持 activation 配置，便于与 relu/silu 等对比）
+# Build ProbResNet blocks (supports activation config, for comparison against relu/silu etc.)
 class ProbResNet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10, activation="tanh_sigmoid"):
         super(ProbResNet, self).__init__()
@@ -199,10 +199,10 @@ class ProbResNet(nn.Module):
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
         self.linear = nn.Linear(512 * block.expansion, num_classes)
 
-        # Xavier参数初始化
-        # 基本思想：保持输入和输出的方差一致
-        # 这样就避免了所有输出值都趋向于0
-        # 这是通用的方法，适用于任何激活函数
+        # Xavier init
+        # Core idea: keep variance consistent between input and output
+        # This prevents all output values from collapsing to 0
+        # This is a general method applicable to any activation function
         # for m in self.modules():
         #     if isinstance(m, nn.Conv2d):
         #         nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -250,7 +250,7 @@ def ProbResNet101(num_classes=10, activation="tanh_sigmoid"):
 def ProbResNet152(num_classes=10, activation="tanh_sigmoid"):
     return ProbResNet(Bottleneck, [3, 8, 36, 3], num_classes=num_classes, activation=activation)
 
-# 测试
+# Test
 if __name__ == '__main__':
     model = ProbResNet18()
     print(model)

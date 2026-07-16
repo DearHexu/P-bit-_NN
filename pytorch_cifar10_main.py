@@ -1,6 +1,6 @@
 """
-CIFAR10 训练脚本（旧版单文件入口，保留兼容）。
-推荐使用：run_train.py（统一 config、TensorBoard、结果目录）与 run_parallel.py（多配置多 GPU 并行）。
+CIFAR10 training script (legacy single-file entry point, kept for compatibility).
+Recommended: run_train.py (unified config, TensorBoard, results directory) and run_parallel.py (multi-config multi-GPU parallel).
 """
 import torchvision.transforms as transforms
 import time
@@ -15,16 +15,16 @@ import os
 import argparse
 import pandas as pd
 
-# 导入模型
+# Import model
 # from backbones.ProbResNet import ProbResNet18
 from backbones.ProbGoogLeNet import ProbGoogLeNet
 
-# 指定GPU
+# Specify GPU
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
 
-# 用于计算GPU运行时间
+# For measuring GPU runtime
 def time_sync():
     # pytorch-accurate time
     if torch.cuda.is_available():
@@ -39,7 +39,7 @@ def train(epoch):
     correct = 0
     total = 0
     train_acc = 0
-    # 开始迭代每个batch中的数据
+    # Start iterating over each batch
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         # inputs:[b,3,32,32], targets:[b]
         # train_outputs:[b,10]
@@ -57,22 +57,22 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
-        # 计算损失
+        # Compute loss
         train_loss += loss.item()
         # print(loss.item())
         _, predicted = outputs.max(1)
         total += targets.size(0)
         correct += predicted.eq(targets).sum().item()
 
-        # 计算准确率
+        # Compute accuracy
         train_acc = correct / total
-        # 每训练100个batch打印一次训练集的loss和准确率
+        # Print train loss and accuracy every 100 batches
         if (batch_idx + 1) % 100 == 0:
             print('[INFO] Epoch-{}-Batch-{}: Train: Loss-{:.4f}, Accuracy-{:.4f}'.format(epoch + 1,
                                                                                          batch_idx + 1,
                                                                                          loss.item(),
                                                                                          train_acc))
-    # 计算每个epoch内训练集的acc
+    # Compute training accuracy within each epoch
     total_train_acc.append(train_acc)
 
 
@@ -105,7 +105,7 @@ def test(epoch, ckpt):
 
     total_test_acc.append(test_acc)
 
-    # 保存权重文件
+    # Save checkpoint
     acc = 100. * correct / total
     if acc > best_acc:
         print('Saving..')
@@ -121,7 +121,7 @@ def test(epoch, ckpt):
 
 
 if __name__ == '__main__':
-    # 设置超参
+    # Set hyperparameters
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=128)
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--checkpoint', type=str, default='checkpoint/ResNet18-CIFAR10.pth')
     opt = parser.parse_args()
 
-    # 设置相关参数
+    # Set parameters
     device = torch.device('cuda:0') if torch.cuda.is_available() else 'cpu'
     # print(device)
     best_acc = 0  # best test accuracy
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
     # classes = ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
 
-    # 设置数据增强
+    # Set data augmentation
     print('==> Preparing data..')
     transform_train = transforms.Compose([
         transforms.RandomCrop(32, padding=4),
@@ -160,41 +160,41 @@ if __name__ == '__main__':
         # transforms.Normalize((0.5,), (0.5,))
     ])
 
-    # 加载CIFAR10数据集
+    # Load CIFAR10 dataset
     trainset = torchvision.datasets.CIFAR10(root=opt.data, train=True, download=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=opt.batch_size, shuffle=True, num_workers=2)
 
     testset = torchvision.datasets.CIFAR10(root=opt.data, train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-    # 下载并加载mnist digits训练数据集
+    # Download and load MNIST digits training dataset
     # train_dataset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_train)
     # trainloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=2)
 
-    # 下载并加载mnist digits测试数据集
+    # Download and load MNIST digits test dataset
     # test_dataset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_test)
     # testloader = DataLoader(test_dataset, batch_size=1000, shuffle=False, num_workers=2)
 
-    # 下载mnist fashion训练数据集
+    # Download FashionMNIST training dataset
     # train_dataset = torchvision.datasets.FashionMNIST(root='./fashion', train=True, download=True,
     #                                                  transform=transform_train)
     # trainloader = DataLoader(train_dataset, batch_size=opt.batch_size, shuffle=True, num_workers=2)
-    # 下载mnist fashion测试数据集
+    # Download FashionMNIST test dataset
     # test_dataset = torchvision.datasets.FashionMNIST(root='./fashion', train=False, download=True,
     #                                                 transform=transform_test)
     # testloader = DataLoader(test_dataset, batch_size=1000, shuffle=False, num_workers=2)
-    # 加载模型
+    # Load model
     print('==> Building model..')
     # model = ProbResNet18().to(device)
     model = ProbGoogLeNet().to(device)
     # model = PbitNet3().to(device)
-   
-    # DP训练
+
+    # DataParallel training
     if device == 'cuda':
         model = torch.nn.DataParallel(model)
         cudnn.benchmark = True
 
-    # 加载之前训练的参数
+    # Load previously trained weights
     if opt.resume:
         # Load checkpoint.
         print('==> Resuming from checkpoint..')
@@ -204,30 +204,30 @@ if __name__ == '__main__':
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
 
-    # 设置损失函数与优化器
+    # Set loss function and optimizer
     criterion = nn.CrossEntropyLoss()
     # criterion = nn.BCEWithLogitsLoss()
 
     # optimizer = optim.SGD(model.parameters(), lr=opt.lr, momentum=0.9, weight_decay=5e-4)
     # optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=5e-4)
     optimizer = optim.AdamW(model.parameters(), lr=opt.lr, weight_decay=1e-4)
-    # 余弦退火：学习率随 epoch 从 lr 平滑降到接近 0（与 AdamW 常用）
+    # Cosine annealing: LR smoothly decays from lr to near 0 per epoch (commonly used with AdamW)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=opt.epochs)
 
-    # 记录training和testing的acc
+    # Track train and test accuracy
     total_test_acc = []
     total_train_acc = []
 
-    # 记录训练时间
+    # Record training time
     tic = time_sync()
 
-    # 开始训练
+    # Start training
     for epoch in range(opt.epochs):
         train(epoch)
         test(epoch, opt.checkpoint)
-        scheduler.step()  # 每个 epoch 后按余弦退火更新学习率
+        scheduler.step()  # Update LR via cosine annealing after each epoch
 
-    # 将 train/test 准确率存入 Excel
+    # Save train/test accuracy to Excel
     os.makedirs('output', exist_ok=True)
     acc_df = pd.DataFrame({
         'Epoch': range(opt.epochs),
@@ -236,7 +236,7 @@ if __name__ == '__main__':
     })
     acc_df.to_excel('output/ResNet18-CIFAR10-Accuracy.xlsx', index=False)
 
-    # 数据可视化
+    # Data visualization
     plt.figure()
     plt.plot(range(opt.epochs), total_train_acc, label='Train Accuracy')
     plt.plot(range(opt.epochs), total_test_acc, label='Test Accuracy')
@@ -244,14 +244,14 @@ if __name__ == '__main__':
     plt.ylabel('Accuracy')
     plt.title('ResNet18-CIFAR10-Accuracy')
     plt.legend()
-    # 自动保存plot出来的图片
+    # Auto-save plotted image
     os.makedirs('output', exist_ok=True)
     plt.savefig('output/ResNet18-CIFAR10-Accuracy.jpg')
     plt.show()
 
-    # 输出best_acc
+    # Output best_acc
     print(f'Best Acc: {best_acc}%')
     toc = time_sync()
-    # 计算本次运行时间
+    # Calculate total runtime
     t = (toc - tic) / 3600
     print(f'Training Done. ({t:.3f}s)')

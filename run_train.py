@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-PbitNet 训练入口（单机单实验）。
-- 使用 config 统一参数，支持命令行覆盖。
-- 日志：TensorBoard（实时 loss/acc 曲线）+ 文件 train.log。
-- 结果统一落在 outputs/<时间戳>_<实验名>/ 下：checkpoint、logs、metrics.csv、accuracy.png。
+PbitNet training entry point (single-machine, single experiment).
+- Uses config for unified parameters, with CLI override support.
+- Logging: TensorBoard (real-time loss/acc curves) + file train.log.
+- Results stored under outputs/<timestamp>_<experiment_name>/: checkpoint, logs, metrics.csv, accuracy.png.
 """
 
 import os
@@ -37,12 +37,12 @@ from core.train_loop import (
 
 
 def build_dataloaders(cfg: ExperimentConfig):
-    """根据 cfg.dataset 构建 DataLoader。"""
+    """Build DataLoader from cfg.dataset."""
     return _build_dataloaders(cfg)
 
 
 def run(cfg: ExperimentConfig):
-    """单次实验完整流程：创建目录、日志、数据、模型、训练、保存结果。"""
+    """Full single-experiment pipeline: create directories, logging, data, model, train, save results."""
     gpu_id = cfg.gpu_id if cfg.gpu_id is not None else 0
     physical_gpu = os.environ.get("PBT_PHYSICAL_GPU_ID")
     if torch.cuda.is_available():
@@ -58,13 +58,13 @@ def run(cfg: ExperimentConfig):
     best_ckpt_path = os.path.join(ckpt_dir, "best.pth")
     last_ckpt_path = os.path.join(ckpt_dir, "last.pth")
 
-    device_str = f"{device} (物理 GPU {physical_gpu})" if physical_gpu else str(device)
+    device_str = f"{device} (physical GPU {physical_gpu})" if physical_gpu else str(device)
     activation = getattr(cfg, "activation", "tanh_sigmoid") or "tanh_sigmoid"
-    log.info("实验名: %s, 模型: %s, 激活: %s, 设备: %s", cfg.exp_name, cfg.model_name, activation, device_str)
-    log.info("输出目录: %s", run_dir)
-    log.info("TensorBoard 日志: %s  （看曲线: tensorboard --logdir=%s）", log_dir, os.path.abspath(cfg.output_root))
+    log.info("Experiment: %s, Model: %s, Activation: %s, Device: %s", cfg.exp_name, cfg.model_name, activation, device_str)
+    log.info("Output dir: %s", run_dir)
+    log.info("TensorBoard logs: %s  (view curves: tensorboard --logdir=%s)", log_dir, os.path.abspath(cfg.output_root))
 
-    # 保存本实验配置到 run_config.json，便于从结果目录直接看出用的哪种激活等
+    # Save experiment config to run_config.json for easy inspection of activation etc. from the results directory
     run_config = {
         "model_name": cfg.model_name,
         "dataset": cfg.dataset,
@@ -85,7 +85,7 @@ def run(cfg: ExperimentConfig):
     start_epoch = 0
     best_acc = 0.0
     if cfg.resume and cfg.checkpoint_path and os.path.isfile(cfg.checkpoint_path):
-        log.info("从 checkpoint 恢复: %s", cfg.checkpoint_path)
+        log.info("Resuming from checkpoint: %s", cfg.checkpoint_path)
         ckpt = torch.load(cfg.checkpoint_path, map_location=device)
         model.load_state_dict(ckpt["net"], strict=True)
         best_acc = ckpt.get("acc", 0.0)
@@ -120,7 +120,7 @@ def run(cfg: ExperimentConfig):
         if acc_pct > best_acc:
             best_acc = acc_pct
             save_checkpoint(model, best_acc, epoch, best_ckpt_path)
-            log.info("保存最佳 checkpoint -> %s", best_ckpt_path)
+            log.info("Saved best checkpoint -> %s", best_ckpt_path)
     tb.close()
 
     save_checkpoint(model, best_acc, cfg.epochs - 1, last_ckpt_path)
@@ -131,11 +131,11 @@ def run(cfg: ExperimentConfig):
         "test_acc": total_test_acc,
     })
     df.to_csv(metrics_path, index=False)
-    # 在 CSV 同目录保存一份带 run 信息的摘要，便于一眼看出激活等
+    # Save a summary with run info alongside the CSV for at-a-glance activation etc.
     summary_path = os.path.join(run_dir, "summary.txt")
     with open(summary_path, "w", encoding="utf-8") as f:
         f.write(f"model_name={cfg.model_name}\ndataset={cfg.dataset}\nactivation={activation}\nepochs={cfg.epochs}\nbest_test_acc={best_acc:.2f}%\n")
-    log.info("指标已保存: %s", metrics_path)
+    log.info("Metrics saved: %s", metrics_path)
     fig, ax = plt.subplots()
     ax.plot(range(len(total_train_acc)), total_train_acc, label="Train Accuracy")
     ax.plot(range(len(total_test_acc)), total_test_acc, label="Test Accuracy")
@@ -146,13 +146,13 @@ def run(cfg: ExperimentConfig):
     ax.legend()
     fig.savefig(os.path.join(run_dir, "accuracy.png"), dpi=150, bbox_inches="tight")
     plt.close(fig)
-    log.info("曲线图已保存: %s/accuracy.png", run_dir)
+    log.info("Curve plot saved: %s/accuracy.png", run_dir)
     elapsed = (time_sync() - t0) / 3600.0
-    log.info("训练结束. Best Test Acc: %.2f%%, 耗时: %.3f h", best_acc, elapsed)
+    log.info("Training finished. Best Test Acc: %.2f%%, Duration: %.3f h", best_acc, elapsed)
     return run_dir, best_acc
 
 
-# 仅概率化/二值权重模型（Prob/Bin 前缀）支持激活配置；非概率化模型 exp_name 不带激活
+# Only probabilistic/binary-weight models (Prob/Bin prefix) support activation config; non-probabilistic models have exp_name without activation
 MODELS_WITH_ACTIVATION = [
     "ProbGoogLeNet", "BinGoogLeNet",
     "ProbResNet18", "ProbResNet34", "ProbResNet50", "ProbResNet101", "ProbResNet152",

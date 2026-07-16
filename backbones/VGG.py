@@ -1,9 +1,9 @@
-'''VGG11/13/16/19 in Pytorch. 含原版与概率网络化版本 ProbVGG（BinarySTE + 可配置激活）。'''
+'''VGG11/13/16/19 in Pytorch. Includes original and probabilistic version ProbVGG (BinarySTE + configurable activation).'''
 import torch
 import torch.nn as nn
 from backbones.BinarySTE import BinarySTE
 
-# M 表示最大池化层
+# M denotes a max pooling layer
 cfg = {
     "VGG11": [64, "M", 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
     "VGG13": [64, 64, "M", 128, 128, "M", 256, 256, "M", 512, 512, "M", 512, 512, "M"],
@@ -13,7 +13,7 @@ cfg = {
 
 
 class VGG(nn.Module):
-    """原版 VGG（Conv+BN+ReLU）。"""
+    """Original VGG (Conv+BN+ReLU)."""
     def __init__(self, vgg_name, num_classes=10):
         super(VGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name], use_prob=False, activation=None)
@@ -57,7 +57,7 @@ class VGG(nn.Module):
 
 
 class ProbVGG(nn.Module):
-    """概率网络化 VGG：每层 Conv+BN+激活+BinarySTE，激活可配置。"""
+    """Probabilistic VGG: Conv+BN+Activation+BinarySTE per layer, activation configurable."""
     def __init__(self, vgg_name, num_classes=10, activation="tanh_sigmoid"):
         super(ProbVGG, self).__init__()
         self.features = self._make_layers(cfg[vgg_name], use_prob=True, activation=activation or "tanh_sigmoid")

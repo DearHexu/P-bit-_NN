@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-训练与测试循环：与配置、日志解耦，供单机与多 GPU 并行脚本共用。
+Training and testing loop: decoupled from config and logging, shared by single-machine and multi-GPU parallel scripts.
 """
 
 import time
@@ -11,19 +11,19 @@ import torch.backends.cudnn as cudnn
 from torch.utils.data import DataLoader
 from typing import Tuple, List, Optional, Any
 
-# 避免循环导入：仅类型注解用
+# Avoid circular import: only used for type annotations
 from config.default import ExperimentConfig
 
 
 def time_sync() -> float:
-    """与 GPU 同步后的当前时间（秒），用于计时。"""
+    """Current time after GPU sync (seconds), used for timing."""
     if torch.cuda.is_available():
         torch.cuda.synchronize()
     return time.time()
 
 
 def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
-    """根据配置构建模型并移至 device；LeNet 根据 dataset 自动设置 in_channels。"""
+    """Build model from config and move to device; LeNet auto-sets in_channels from dataset."""
     dataset = getattr(cfg, "dataset", "CIFAR10") or "CIFAR10"
     num_classes = cfg.num_classes
     try:
@@ -33,7 +33,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
         in_channels = 3
 
     activation = getattr(cfg, "activation", "tanh_sigmoid") or "tanh_sigmoid"
-    # ---------- 全二值权重模型（Bin 前缀） ----------
+    # ---------- Fully binary-weight models (Bin prefix) ----------
     if cfg.model_name == "BinGoogLeNet":
         from backbones.BinGoogLeNet import BinGoogLeNet
         model = BinGoogLeNet(num_classes=num_classes, activation=activation)
@@ -52,7 +52,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
     elif cfg.model_name == "BinResNet152":
         from backbones.BinResNet import BinResNet152
         model = BinResNet152(num_classes=num_classes, activation=activation)
-    # ---------- 概率化模型（Prob 前缀） ----------
+    # ---------- Probabilistic models (Prob prefix) ----------
     elif cfg.model_name == "ProbGoogLeNet":
         from backbones.ProbGoogLeNet import ProbGoogLeNet
         model = ProbGoogLeNet(num_classes=num_classes, activation=activation)
@@ -73,7 +73,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
         model = ProbResNet152(num_classes=num_classes, activation=activation)
     elif cfg.model_name in ("ProbVGG11", "ProbVGG13", "ProbVGG16", "ProbVGG19"):
         from backbones.VGG import ProbVGG
-        vgg_name = cfg.model_name[4:]  # 去掉 "Prob"
+        vgg_name = cfg.model_name[4:]  # Strip "Prob" prefix
         model = ProbVGG(vgg_name, num_classes=num_classes, activation=activation)
     elif cfg.model_name == "ProbAlexNet":
         from backbones.AlexNet import ProbAlexNet
@@ -90,7 +90,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
             "ProbDenseNet121": ProbDenseNet121, "ProbDenseNet169": ProbDenseNet169,
             "ProbDenseNet201": ProbDenseNet201, "ProbDenseNet161": ProbDenseNet161,
         }[cfg.model_name](num_classes=num_classes, activation=activation)
-    # ---------- 非概率化模型（原网络名，用于 CIFAR10/CIFAR100 对比基线） ----------
+    # ---------- Non-probabilistic models (original network names, for CIFAR10/CIFAR100 comparison baselines) ----------
     elif cfg.model_name == "GoogLeNet":
         from backbones.ProbGoogLeNet import GoogLeNet
         model = GoogLeNet(num_classes=num_classes)
@@ -119,7 +119,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
             "DenseNet201": DenseNet201, "DenseNet161": DenseNet161,
         }[cfg.model_name](num_classes=num_classes)
     else:
-        raise ValueError(f"未知模型: {cfg.model_name}")
+        raise ValueError(f"Unknown model: {cfg.model_name}")
     model = model.to(device)
     if cfg.use_data_parallel and device.type == "cuda":
         model = torch.nn.DataParallel(model)
@@ -128,7 +128,7 @@ def build_model(cfg: ExperimentConfig, device: torch.device) -> nn.Module:
 
 
 def build_criterion(cfg: ExperimentConfig) -> nn.Module:
-    """根据配置构建损失函数。"""
+    """Build loss function from config."""
     if cfg.criterion == "CrossEntropy":
         return nn.CrossEntropyLoss()
     if cfg.criterion == "BCEWithLogits":
@@ -137,7 +137,7 @@ def build_criterion(cfg: ExperimentConfig) -> nn.Module:
 
 
 def build_optimizer_scheduler(model: nn.Module, cfg: ExperimentConfig) -> Tuple[optim.Optimizer, Any]:
-    """构建优化器与学习率调度器。Bin* 模型：无 weight decay，学习率放大。"""
+    """Build optimizer and LR scheduler. Bin* models: no weight decay, higher learning rate."""
     is_bin = getattr(cfg, "model_name", "").startswith("Bin")
     weight_decay = 0.0 if is_bin else cfg.weight_decay
     lr = cfg.lr * 2.0 if is_bin else cfg.lr
@@ -164,9 +164,9 @@ def train_one_epoch(
     global_step: Optional[dict] = None,
 ) -> Tuple[float, float]:
     """
-    训练一个 epoch。
+    Train one epoch.
     Returns:
-        (平均 train_loss, train_acc)
+        (average train_loss, train_acc)
     """
     model.train()
     train_loss = 0.0
@@ -211,7 +211,7 @@ def test_one_epoch(
     epoch: int,
     num_classes: int,
 ) -> Tuple[float, float]:
-    """验证/测试一个 epoch。Returns: (平均 test_loss, test_acc)。"""
+    """Validate/test one epoch. Returns: (average test_loss, test_acc)."""
     model.eval()
     test_loss = 0.0
     correct = 0
@@ -240,7 +240,7 @@ def save_checkpoint(
     epoch: int,
     path: str,
 ):
-    """保存当前最佳 checkpoint。"""
+    """Save current best checkpoint."""
     import os
     os.makedirs(os.path.dirname(path), exist_ok=True)
     state = {

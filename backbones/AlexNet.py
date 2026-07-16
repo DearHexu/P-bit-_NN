@@ -1,10 +1,10 @@
-'''AlexNet in PyTorch. 含原版与概率网络化版本 ProbAlexNet（BinarySTE + 可配置激活）。'''
+'''AlexNet in PyTorch. Includes original and probabilistic version ProbAlexNet (BinarySTE + configurable activation).'''
 import torch.nn as nn
 from backbones.BinarySTE import BinarySTE
 
 
 class AlexNet(nn.Module):
-    """原版 AlexNet（CIFAR 适配，最后用 AdaptiveAvgPool2d）。"""
+    """Original AlexNet (CIFAR-adapted, uses AdaptiveAvgPool2d at the end)."""
     def __init__(self, num_classes=10):
         super(AlexNet, self).__init__()
         self.feature_extraction = nn.Sequential(
@@ -39,7 +39,7 @@ class AlexNet(nn.Module):
 
 
 class ProbAlexNet(nn.Module):
-    """概率网络化 AlexNet：每层 Conv+BN+激活+BinarySTE，激活可配置（与 ProbResNet 一致）。"""
+    """Probabilistic AlexNet: Conv+BN+Activation+BinarySTE per layer, activation configurable (same as ProbResNet)."""
     def __init__(self, num_classes=10, activation="tanh_sigmoid"):
         super(ProbAlexNet, self).__init__()
         from core.activations import get_activation

@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-可配置激活函数：供 ProbResNet / ProbGoogLeNet 等做对比实验。
-与 config 中的 ACTIVATION_CHOICES 对应，通过 get_activation(name) 获取 nn.Module。
+Configurable activation functions for ProbResNet / ProbGoogLeNet etc. comparison experiments.
+Corresponds to ACTIVATION_CHOICES in config; obtain nn.Module via get_activation(name).
 """
 
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Union
 
-# 与 config.batch_run_config.ACTIVATION_CHOICES 保持一致
+# Must match config.batch_run_config.ACTIVATION_CHOICES
 ACTIVATION_REGISTRY = {
     "relu": nn.ReLU(inplace=True),
     "sigmoid": nn.Sigmoid(),
     "tanh": nn.Tanh(),
-    "tanh_sigmoid": None,  # 自定义，见下
+    "tanh_sigmoid": None,  # Custom, see below
     "silu": nn.SiLU(inplace=True),
     "gelu": nn.GELU(),
     "leaky_relu": nn.LeakyReLU(0.01, inplace=True),
@@ -21,21 +21,21 @@ ACTIVATION_REGISTRY = {
 
 
 class TanhSigmoid(nn.Module):
-    """复合激活: tanh(x) * sigmoid(x)，用于概率计算网络对比实验。"""
+    """Composite activation: tanh(x) * sigmoid(x), used for probabilistic computing network comparison experiments."""
     def forward(self, x):
         return F.tanh(x) * F.sigmoid(x)
 
 
 def get_activation(name: str) -> nn.Module:
     """
-    根据配置名返回激活函数模块（新建实例，避免多模型共享同一模块）。
-    name 取值见 config.batch_run_config.ACTIVATION_CHOICES。
+    Return a new activation function module instance by config name (avoids sharing the same module across models).
+    For valid name values see config.batch_run_config.ACTIVATION_CHOICES.
     """
     name = (name or "tanh_sigmoid").strip().lower()
     if name == "tanh_sigmoid":
         return TanhSigmoid()
     if name in ACTIVATION_REGISTRY and ACTIVATION_REGISTRY[name] is not None:
-        # 返回新实例（ReLU/SiLU 等可复制的）
+        # Return new instance (for ReLU/SiLU etc. that can be copied)
         m = ACTIVATION_REGISTRY[name]
         if isinstance(m, nn.ReLU):
             return nn.ReLU(inplace=True)
@@ -45,4 +45,4 @@ def get_activation(name: str) -> nn.Module:
             return nn.LeakyReLU(0.01, inplace=True)
         if isinstance(m, (nn.Sigmoid, nn.Tanh, nn.GELU)):
             return type(m)()
-    raise ValueError(f"未知激活: {name}，可选: relu, sigmoid, tanh, tanh_sigmoid, silu, gelu, leaky_relu")
+    raise ValueError(f"Unknown activation: {name}, choices: relu, sigmoid, tanh, tanh_sigmoid, silu, gelu, leaky_relu")

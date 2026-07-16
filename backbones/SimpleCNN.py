@@ -1,11 +1,11 @@
-'''LeNet in PyTorch. 含原版与概率网络化版本 ProbLeNet5/ProbLeNet3（BinarySTE + 可配置激活）。'''
+'''LeNet in PyTorch. Includes original and probabilistic versions ProbLeNet5/ProbLeNet3 (BinarySTE + configurable activation).'''
 import torch.nn as nn
 import torch.nn.functional as F
 from backbones.BinarySTE import BinarySTE
 
 
 class LeNet5(nn.Module):
-    """原版 LeNet5。"""
+    """Original LeNet5."""
     def __init__(self, num_class=10, in_channels=1):
         super(LeNet5, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, 6, 5)
@@ -30,7 +30,7 @@ class LeNet5(nn.Module):
 
 
 class ProbLeNet5(nn.Module):
-    """概率网络化 LeNet5：Conv+BN+激活+BinarySTE，激活可配置。"""
+    """Probabilistic LeNet5: Conv+BN+Activation+BinarySTE, activation configurable."""
     def __init__(self, num_class=10, in_channels=1, activation="tanh_sigmoid"):
         super(ProbLeNet5, self).__init__()
         from core.activations import get_activation
@@ -63,7 +63,7 @@ class ProbLeNet5(nn.Module):
 
 
 class LeNet3(nn.Module):
-    """原版 LeNet3。"""
+    """Original LeNet3."""
     def __init__(self, num_class=10, in_channels=1):
         super(LeNet3, self).__init__()
         self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, padding=1)
@@ -88,7 +88,7 @@ class LeNet3(nn.Module):
 
 
 class ProbLeNet3(nn.Module):
-    """概率网络化 LeNet3：Conv+BN+激活+BinarySTE，激活可配置。"""
+    """Probabilistic LeNet3: Conv+BN+Activation+BinarySTE, activation configurable."""
     def __init__(self, num_class=10, in_channels=1, activation="tanh_sigmoid"):
         super(ProbLeNet3, self).__init__()
         from core.activations import get_activation

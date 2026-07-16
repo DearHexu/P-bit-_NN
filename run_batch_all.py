@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-批量跑全量实验：所有模型 × 所有数据集。
-默认从 config/batch_run_config.py 读取：并行数量、模型列表、数据集列表（改那个文件即可）。
+Batch run all experiments: all models x all datasets.
+Reads from config/batch_run_config.py by default: parallelism, model list, dataset list (just edit that file).
 """
 
 import os
@@ -17,7 +17,7 @@ if ROOT not in sys.path:
 from config.default import MODEL_CHOICES, DATASET_CHOICES
 from config.batch_run_config import ACTIVATION_CHOICES
 
-# 支持激活函数配置的模型（概率化 Prob*、二值权重 Bin*，做 模型×数据集×激活 对比）
+# Models that support activation config (Prob* probabilistic, Bin* binary-weight; run model x dataset x activation comparisons)
 MODELS_WITH_ACTIVATION = [
     "ProbGoogLeNet", "BinGoogLeNet",
     "ProbResNet18", "ProbResNet34", "ProbResNet50", "ProbResNet101", "ProbResNet152",
@@ -29,7 +29,7 @@ MODELS_WITH_ACTIVATION = [
 
 
 def load_batch_config() -> dict:
-    """从 config/batch_run_config.py 读取配置；缺少的项用默认值。"""
+    """Read config from config/batch_run_config.py; use defaults for missing items."""
     try:
         from config import batch_run_config as c
         return {
@@ -58,11 +58,11 @@ def load_batch_config() -> dict:
 
 
 def run_one_experiment(exp: Dict[str, Any], output_root: str = "outputs") -> int:
-    """子进程运行单次实验；通过 CUDA_VISIBLE_DEVICES 绑定物理 GPU，子进程内只看到 cuda:0。"""
+    """Run a single experiment in a subprocess; binds a physical GPU via CUDA_VISIBLE_DEVICES, subprocess sees only cuda:0."""
     gpu_id = exp.get("gpu_id", 0)
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
-    env["PBT_PHYSICAL_GPU_ID"] = str(gpu_id)  # 供 run_train 打日志用
+    env["PBT_PHYSICAL_GPU_ID"] = str(gpu_id)  # For run_train logging
     cmd = [
         sys.executable,
         os.path.join(ROOT, "run_train.py"),
@@ -94,11 +94,11 @@ def build_all_experiments(
     lr: float = None,
 ) -> List[Dict[str, Any]]:
     """
-    生成实验列表。若 activations 非空，则对 MODELS_WITH_ACTIVATION 内的模型展开 模型×数据集×激活；
-    其余模型仅 模型×数据集，使用默认激活（Prob* 用 tanh_sigmoid，其它不传）。
+    Generate experiment list. If activations is non-empty, expand model x dataset x activation for MODELS_WITH_ACTIVATION models;
+    other models use only model x dataset, with default activation (Prob* uses tanh_sigmoid, others don't pass it).
     """
     experiments = []
-    # 先展开 (model, dataset, activation)
+    # First expand (model, dataset, activation)
     triples = []
     for model_name in models:
         for dataset in datasets:
@@ -110,7 +110,7 @@ def build_all_experiments(
     for i, item in enumerate(triples):
         model_name, dataset, act = item
         gpu_id = gpu_ids[i % len(gpu_ids)]
-        # 支持激活的模型：目录名始终带激活，便于从文件夹名看出用的哪种激活
+        # Activation-capable models: directory name always includes activation, for easy identification from folder name
         if act:
             exp_name = f"{model_name}_{dataset}_{act}"
             exp = {"exp_name": exp_name, "model_name": model_name, "dataset": dataset, "activation": act, "gpu_id": gpu_id, "epochs": epochs, "batch_size": batch_size}
@@ -130,23 +130,23 @@ def main():
     import argparse
     cfg = load_batch_config()
     parser = argparse.ArgumentParser(
-        description="批量运行 模型×数据集 实验。默认从 config/batch_run_config.py 读配置。"
+        description="Batch run model x dataset experiments. Reads config from config/batch_run_config.py by default."
     )
     parser.add_argument("--models", type=str, default=None,
-                        help="逗号分隔的模型名，不传则用配置文件中的 MODELS")
+                        help="Comma-separated model names; uses config file MODELS if not provided")
     parser.add_argument("--datasets", type=str, default=None,
-                        help="逗号分隔的数据集，不传则用配置文件中的 DATASETS")
+                        help="Comma-separated datasets; uses config file DATASETS if not provided")
     parser.add_argument("--gpu_ids", type=str, default=None,
-                        help="逗号分隔的 GPU ID，不传则用配置文件中的 GPU_IDS")
+                        help="Comma-separated GPU IDs; uses config file GPU_IDS if not provided")
     parser.add_argument("--output_root", type=str, default=None)
     parser.add_argument("--max_workers", type=int, default=None,
-                        help="并行进程数，不传则用配置文件中的 MAX_WORKERS")
+                        help="Number of parallel processes; uses config file MAX_WORKERS if not provided")
     parser.add_argument("--epochs", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
     args = parser.parse_args()
 
-    # 命令行覆盖配置文件
+    # CLI overrides config file
     models = [s.strip() for s in args.models.split(",")] if args.models else (cfg["models"] or MODEL_CHOICES)
     datasets = [s.strip() for s in args.datasets.split(",")] if args.datasets else (cfg["datasets"] or DATASET_CHOICES)
     gpu_ids = [int(s.strip()) for s in args.gpu_ids.split(",")] if args.gpu_ids else cfg["gpu_ids"]
@@ -155,15 +155,15 @@ def main():
     epochs = args.epochs if args.epochs is not None else cfg["epochs"]
     batch_size = args.batch_size if args.batch_size is not None else cfg["batch_size"]
     lr = args.lr if args.lr is not None else cfg["lr"]
-    activations = cfg.get("activations")  # None 或列表，用于对比多种激活
+    activations = cfg.get("activations")  # None or list, for comparing multiple activations
 
-    # 过滤非法模型/数据集/激活
+    # Filter invalid models/datasets/activations
     models = [m for m in models if m in MODEL_CHOICES]
     datasets = [d for d in datasets if d in DATASET_CHOICES]
     if activations:
         activations = [a for a in activations if a in ACTIVATION_CHOICES]
     if not models or not datasets:
-        print("模型或数据集为空或无效。MODEL_CHOICES:", MODEL_CHOICES, "DATASET_CHOICES:", DATASET_CHOICES)
+        print("Models or datasets empty or invalid. MODEL_CHOICES:", MODEL_CHOICES, "DATASET_CHOICES:", DATASET_CHOICES)
         return
 
     experiments = build_all_experiments(
@@ -172,9 +172,9 @@ def main():
     )
     n_workers = max_workers or len(gpu_ids)
     n_workers = min(n_workers, len(experiments))
-    print(f"共 {len(experiments)} 个实验 (models={len(models)}, datasets={len(datasets)})，并行数 {n_workers}，GPUs: {gpu_ids}")
+    print(f"Total {len(experiments)} experiments (models={len(models)}, datasets={len(datasets)}), parallelism {n_workers}, GPUs: {gpu_ids}")
     for ex in experiments:
-        print(f"  -> {ex['exp_name']} -> 物理 GPU {ex['gpu_id']}")
+        print(f"  -> {ex['exp_name']} -> physical GPU {ex['gpu_id']}")
 
     with multiprocessing.Pool(processes=n_workers) as pool:
         results = []
@@ -184,11 +184,11 @@ def main():
         for name, r in results:
             try:
                 code = r.get()
-                print(f"[{name}] 退出码: {code}")
+                print(f"[{name}] exit code: {code}")
             except Exception as e:
-                print(f"[{name}] 异常: {e}")
+                print(f"[{name}] exception: {e}")
 
-    print("配置说明: 修改 config/batch_run_config.py 可改 并行数量 / 模型列表 / 数据集列表")
+    print("Config note: edit config/batch_run_config.py to change parallelism / model list / dataset list")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-全二值权重 ResNet（BinResNet）：权重仅 ±1，无缩放，STE 反向；激活与配置方式同 ProbResNet。
+Fully binary-weight ResNet (BinResNet): weights are ±1 only, no scaling, STE backward; activation and configuration same as ProbResNet.
 """
 
 import torch
@@ -77,7 +77,7 @@ class Bottleneck(nn.Module):
 
 
 class BinResNet(nn.Module):
-    """全二值权重 ResNet：所有 Conv/Linear 为 ±1 二值，激活可配置，不做 weight decay、学习率可调大。"""
+    """Fully binary-weight ResNet: all Conv/Linear use ±1 binary weights, activation configurable, no weight decay, higher LR allowed."""
 
     def __init__(self, block, num_blocks, num_classes=10, activation="tanh_sigmoid"):
         super().__init__()

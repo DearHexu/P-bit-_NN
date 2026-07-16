@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-训练日志：TensorBoard 实时曲线 + 文件日志。
-便于像 TensorFlow 一样在浏览器中实时查看 loss/accuracy 变化。
+Training logger: TensorBoard real-time curves + file logging.
+View loss/accuracy changes in the browser in real time, like TensorFlow.
 """
 
 import os
 import logging
 from typing import Optional
 
-# TensorBoard（PyTorch 内置，与 TensorFlow 同格式）
+# TensorBoard (built into PyTorch, same format as TensorFlow)
 try:
     from torch.utils.tensorboard import SummaryWriter
     HAS_TB = True
@@ -19,14 +19,14 @@ except Exception:
 
 def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> logging.Logger:
     """
-    配置根 logger：控制台 + 可选文件。
-    返回的 logger 用于打印训练信息（与 TensorBoard 互补）。
+    Configure root logger: console + optional file.
+    The returned logger is used to print training info (complementary to TensorBoard).
     """
     log = logging.getLogger("pbitnet")
     log.setLevel(level)
     log.handlers.clear()
     fmt = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    # 控制台
+    # Console
     ch = logging.StreamHandler()
     ch.setFormatter(fmt)
     log.addHandler(ch)
@@ -39,14 +39,14 @@ def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> 
 
 
 def get_logger(name: str = "pbitnet") -> logging.Logger:
-    """获取已配置的 logger。"""
+    """Get the configured logger."""
     return logging.getLogger(name)
 
 
 class TensorBoardLogger:
     """
-    TensorBoard 记录器封装：记录 loss、accuracy 等标量，便于实时查看曲线。
-    使用方式：在 train/valid 循环中调用 add_scalar / log_epoch。
+    TensorBoard logger wrapper: records scalars such as loss, accuracy for real-time curve viewing.
+    Usage: call add_scalar / log_epoch in the train/valid loop.
     """
 
     def __init__(self, log_dir: str, enabled: bool = True):
@@ -62,7 +62,7 @@ class TensorBoardLogger:
 
     def log_epoch(self, epoch: int, train_loss: float, train_acc: float,
                   test_loss: Optional[float] = None, test_acc: Optional[float] = None):
-        """按 epoch 记录训练/测试 loss 与准确率。"""
+        """Record train/test loss and accuracy per epoch."""
         self.add_scalar("loss/train", train_loss, epoch)
         self.add_scalar("accuracy/train", train_acc, epoch)
         if test_loss is not None:
@@ -71,7 +71,7 @@ class TensorBoardLogger:
             self.add_scalar("accuracy/test", test_acc, epoch)
 
     def log_batch(self, global_step: int, loss: float, acc: float, prefix: str = "train"):
-        """按 step 记录当前 batch 的 loss/acc（可选，用于更细粒度曲线）。"""
+        """Record per-batch loss/acc by step (optional, for finer-grained curves)."""
         self.add_scalar(f"batch/{prefix}_loss", loss, global_step)
         self.add_scalar(f"batch/{prefix}_acc", acc, global_step)
 

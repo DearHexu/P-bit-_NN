@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-全二值权重 GoogLeNet（BinGoogLeNet）：权重仅 ±1，无缩放，STE 反向；激活与配置方式同 ProbGoogLeNet。
+Fully binary-weight GoogLeNet (BinGoogLeNet): weights are ±1 only, no scaling, STE backward; activation and configuration same as ProbGoogLeNet.
 """
 
 import torch
@@ -65,7 +65,7 @@ class Inception(nn.Module):
 
 
 class BinGoogLeNet(nn.Module):
-    """全二值权重 GoogLeNet：所有 Conv/Linear 为 ±1 二值，激活可配置。"""
+    """Fully binary-weight GoogLeNet: all Conv/Linear use ±1 binary weights, activation configurable."""
 
     def __init__(self, num_classes=10, activation="tanh_sigmoid"):
         super().__init__()

@@ -1,6 +1,6 @@
 """
-权重可视化/推理示例：加载 PbitNet  checkpoint，查看卷积层权重分布。
-使用与训练时一致的模型（如 ProbResNet18），checkpoint 路径建议指向 outputs/<run_dir>/checkpoint/best.pth。
+Weight visualization/inference example: load a PbitNet checkpoint and view conv layer weight distributions.
+Use the same model architecture as during training (e.g. ProbResNet18); checkpoint path should point to outputs/<run_dir>/checkpoint/best.pth.
 """
 import os
 import argparse
@@ -13,7 +13,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--checkpoint", type=str, default="outputs/checkpoint/best.pth",
-                        help="checkpoint 路径（例如 outputs/xxx/checkpoint/best.pth）")
+                        help="checkpoint path (e.g. outputs/xxx/checkpoint/best.pth)")
     parser.add_argument("--model", type=str, default="ProbResNet18", choices=["ProbResNet18", "ProbResNet34"])
     args = parser.parse_args()
 
@@ -25,7 +25,7 @@ def main():
         model = ProbResNet34()
 
     if not os.path.isfile(args.checkpoint):
-        print("Checkpoint 不存在:", args.checkpoint)
+        print("Checkpoint not found:", args.checkpoint)
         return
     checkpoint = torch.load(args.checkpoint, map_location="cpu")
     model.load_state_dict(checkpoint["net"], strict=True)
@@ -38,7 +38,7 @@ def main():
     conv22_weights = model.layer1[1].conv2.weight.data.cpu().numpy().flatten()
     # linear_weights = model.linear.weight.data.cpu().numpy().flatten()
 
-    # 绘制分布图
+    # Plot distribution histograms
     fig, axes = plt.subplots(2, 2, figsize=(10, 5))
     axes[0][0].hist(conv11_weights, bins=3, alpha=1, color='red')
     axes[0][0].set_title("Conv11 Layer Weights")
@@ -53,7 +53,7 @@ def main():
     axes[1][1].set_title("Conv22 Layer Weights")
     plt.tight_layout()
     plt.savefig("weight_distribution.png", dpi=150, bbox_inches="tight")
-    print("已保存 weight_distribution.png")
+    print("Saved weight_distribution.png")
     plt.show()
 
 
